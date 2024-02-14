@@ -1,1 +1,27 @@
 # List required packages in this file, one per line.
+autopep8
+numpy
+scipy
+pandas
+netCDF4==1.6.1
+matplotlib
+numba
+eomaps
+statsmodels
+scikit-learn
+cartopy
+xarray
+dask
+flake8
+pyflakes
+yapf
+pip
+cadati
+pytesmo
+ascat
+pygeobase
+pygeogrids
+pynetcf
+cmcrameri
+fibgrid
+
