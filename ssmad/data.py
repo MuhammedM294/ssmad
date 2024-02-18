@@ -29,9 +29,9 @@ class AscatData(GriddedNcContiguousRaggedTs):
         super().__init__(path, grid, ioclass_kws=ioclass_kws)
         
 
-def read_grid_point_example(loc,
-                            ascat_sm_path,
-                            read_bulk=False):
+def read_grid_point(loc,
+                   ascat_sm_path,
+                  read_bulk=False):
     """
     Read grid point for given lon/lat coordinates or grid_point.
 
@@ -80,17 +80,48 @@ def read_grid_point_example(loc,
 
     return data
 
-ascat_path = Path("/home/m294/ASCAT/081_ssm_userformat/datasets")
 
-# Botswana
-lat = -22.372
-lon = 23.182
-loc = (lon, lat)
-ascat_ds = read_grid_point_example(loc , ascat_path)
-ascat_ts = ascat_ds.get("ascat_ts")
-ascat_gpi = ascat_ds.get("ascat_gpi")
-sm_ts= ascat_ts.get("sm")
-sm_ts.dropna(inplace=True)
+def extract_obs_ts(loc, ascat_path, obs_type="sm", read_bulk=False):
+    """
+    Read time series of given observation type.
 
-print(type(ascat_ds))
-print(ascat_ds.keys())
+    Parameters
+    ----------
+    loc : int, tuple
+        Tuple is interpreted as longitude, latitude coordinate.
+        Integer is interpreted as grid point index.
+    ascat_path : str
+        Path to ASCAT soil moisture data.
+    obs : str, optional
+        Observation type (default: "sm").
+    read_bulk : bool, optional
+        If "True" all data will be read in memory, if "False"
+        only a single time series is read (default: False).
+        Use "True" to process multiple GPIs in a loop and "False" to
+        read/analyze a single time series.
+    """
+    data = read_grid_point(loc, ascat_path, read_bulk)
+    ascat_ts = data.get("ascat_ts")
+    lat = data.get("ascat_lat")
+    lon = data.get("ascat_lon")
+    gpi = data.get("ascat_gpi")
+    ts= ascat_ts.get(obs_type)
+    ts.dropna(inplace=True)
+    
+    return {"ts": ts, "lon": lon, "lat": lat, "gpi": gpi}
+
+
+
+
+
+if __name__ == "__main__":
+    
+    ascat_path = Path("/home/m294/ASCAT/081_ssm_userformat/datasets")
+    lat = -22.372
+    lon = 23.182
+    loc = (lon, lat)
+    sm_ts = extract_obs_ts(loc, ascat_path , obs_type="sm")
+    print(sm_ts['lat'])
+    print(sm_ts['lon'])
+    print(sm_ts['gpi'])
+    print(sm_ts['ts'].head())
