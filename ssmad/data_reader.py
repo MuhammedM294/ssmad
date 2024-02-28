@@ -116,7 +116,7 @@ def extract_obs_ts(loc, ascat_path, obs_type="sm", read_bulk=False):
 
 if __name__ == "__main__":
     
-    ascat_path = Path("/home/m294/ASCAT/081_ssm_userformat/datasets")
+    ascat_path = Path("/home/m294/VSA/Code/datasets")
     lat = -22.372
     lon = 23.182
     loc = (lon, lat)
