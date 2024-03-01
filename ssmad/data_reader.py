@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from fibgrid.realization import FibGrid
 from pynetcf.time_series import GriddedNcContiguousRaggedTs
@@ -31,7 +32,7 @@ class AscatData(GriddedNcContiguousRaggedTs):
 
 def read_grid_point(loc,
                    ascat_sm_path,
-                  read_bulk=False):
+                   read_bulk=False):
     """
     Read grid point for given lon/lat coordinates or grid_point.
 
@@ -70,9 +71,6 @@ def read_grid_point(loc,
     # set observations to NaN with less then two observations
     valid = ascat_ts["num_sigma"] >= 2
     ascat_ts.loc[~valid, ["sm", "sigma40", "slope40", "curvature40"]] = np.nan
-
-
-
     data["ascat_ts"] = ascat_ts
     data["ascat_gpi"] = ascat_gpi
     data["ascat_lon"] = lon
@@ -108,7 +106,7 @@ def extract_obs_ts(loc, ascat_path, obs_type="sm", read_bulk=False):
     ts= ascat_ts.get(obs_type)
     ts.dropna(inplace=True)
     
-    return {"ts": ts, "lon": lon, "lat": lat, "gpi": gpi}
+    return {"ts": pd.DataFrame(ts), "lon": lon, "lat": lat, "gpi": gpi}
 
 
 
@@ -116,12 +114,4 @@ def extract_obs_ts(loc, ascat_path, obs_type="sm", read_bulk=False):
 
 if __name__ == "__main__":
     
-    ascat_path = Path("/home/m294/VSA/Code/datasets")
-    lat = -22.372
-    lon = 23.182
-    loc = (lon, lat)
-    sm_ts = extract_obs_ts(loc, ascat_path , obs_type="sm")
-    print(sm_ts['lat'])
-    print(sm_ts['lon'])
-    print(sm_ts['gpi'])
-    print(sm_ts['ts'].head())
+      pass
