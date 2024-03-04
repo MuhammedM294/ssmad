@@ -1,12 +1,15 @@
 """
-A module for soil moisture anomalies calculation methods based on climatology. The module contains the following classes:
+A module for soil moisture anomalies calculation methods based on climatology. The module implements the following methods:
 
-1. AnomalyDetector: A base class for detecting anomalies in time series data based on climatology. Inherited from the Climatology class.
-2. Z_Score: A class for detecting anomalies in time series data based on the Z-Score method.
-3. SMAPI: A class for detecting anomalies in time series data based on the Soil Moisture Anomaly Percent Index(SMAPI) method.
-4. SMDI: A class for detecting anomalies in time series data based on the Soil Moisture Deficit Index(SMDI) method.
-5. ESSMI: A class for detecting anomalies in time series data based on the Empirical Standardized Soil Moisture Index(ESSMI) method.
-6. SMAD: A class for detecting anomalies in time series data based on the Standardized Median Absolute Deviation(SMAD) method.
+1. Z-Score: The standarized z-score method. 
+2. SMAPI: The Soil Moisture Anomaly Percent Index method.
+3. SMDI: The Soil Moisture Deficit Index method.
+4. ESSMI: The Empirical Standardized Soil Moisture Index method.
+5. SMAD: The Standardized Median Absolute Deviation method.
+6. SMDS: The Soil Moisture Drought Severity method.
+7. SMCI: The Soil Moisture Condition Index method.
+8. SMCA: The Soil Moisture Content Anomaly method.
+
 
 """
 
