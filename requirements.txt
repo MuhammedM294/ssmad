@@ -23,4 +23,5 @@ pygeogrids
 pynetcf
 cmcrameri
 fibgrid
+datashader
 
