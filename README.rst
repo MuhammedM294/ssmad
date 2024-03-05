@@ -1,5 +1,5 @@
 ================================================
-Surface Soil Moisture Anomaly Detection Workflow
+Surface Soil Moisture Anomaly Detection Workflow (in progress)
 ================================================
 
 
