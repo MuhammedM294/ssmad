@@ -27,6 +27,14 @@ class Aggregation:
     metrics : List[str]
         The list of metrics to be applied during aggregation. Supported values: 'mean', 'median', 'min', 'max'.
         
+    mode : str
+        Perform aggregation on the entire dataset or on a subset of the dataset. Supported values: 'all', 'subset'.
+        
+    start_date : str
+        The start date for the aggregation in case of subset mode. The format should be 'YYYY-MM-DD'.
+    end_date : str
+        The end date for the aggregation in case of subset mode. The format should be 'YYYY-MM-DD'.
+        
     resulted_df : pd.DataFrame
         The resulting DataFrame after aggregation.
 
@@ -43,8 +51,11 @@ class Aggregation:
         
     _validate_input():
         Validates the input parameters.
+    
+    _set_up_mode():
+        Filters the DataFrame based on the parameters provided to perform aggregation on a subset or all of the data.
     """
-    def __init__(self, df: pd.DataFrame, variable: str, time_step: str):
+    def __init__(self, df: pd.DataFrame, variable: str, time_step: str , mode:str = 'all' , start_date:str = None, end_date:str = None):
         """Initializes the Aggregation class.
 
         Parameters:
@@ -60,17 +71,52 @@ class Aggregation:
             
         metrics : List[str]
             The list of metrics to be applied during aggregation. Supported values: 'mean', 'median', 'min', 'max'.
+        
+        mode : str
+            Perform aggregation on the entire dataset or on a subset of the dataset. Supported values: 'all', 'subset'.
+        
+        start_date : str
+            The start date for the aggregation in case of subset mode. The format should be 'YYYY-MM-DD'.
+        
+        end_date : str
+            The end date for the aggregation in case of subset mode. The format should be 'YYYY-MM-DD'.
             
         """
         self.original_df = df
         self.variable = variable
         self.time_step = time_step
+        self.mode = mode
+        self.start_date = start_date
+        self.end_date = end_date
         self.valid_time_steps = ["month", "dekad", "week"]
         self._validate_input()
         # Resampling the data to daily frequency and removing NaN values
         self.df = pd.DataFrame(self.original_df[self.variable]).resample('D').mean().dropna()
+        self.df = self._set_up_mode()
         # Creating an empty DataFrame to store the aggregated data
         self.resulted_df = pd.DataFrame()
+        
+    def _set_up_mode(self):
+        """
+        Filters the DataFrame based on specified time/date conditions.
+
+        Returns:
+        --------
+        pd.DataFrame
+            The filtered DataFrame.
+        """
+        if self.mode == 'all':
+            return self.df
+        elif self.mode == 'subset':
+            try:
+                if self.start_date and self.end_date:
+                    return self.df.loc[self.start_date:self.end_date]
+            except TypeError as e:
+                print(e)
+                raise TypeError("In case of subset mode: start and end dates should be provided in the format 'YYYY-MM-DD'.")
+        
+                
+            
         
     def _validate_time_step(self,) -> None:
         """
@@ -218,13 +264,14 @@ class Climatology(Aggregation):
         Calculates climatology based on the aggregated data.
     """
     
-    def __init__(self, df: pd.DataFrame, variable: str, time_step: str, metrics: List[str]):
+    def __init__(self, df: pd.DataFrame, variable: str, time_step: str, metrics: List[str] ,
+                 mode:str = 'all' , start_date:str = None, end_date:str = None):
         """
         Initializes the Climatology class.
         """
         self.metrics = metrics
         self.valid_metrics = ["mean", "median", "min", "max"]
-        super().__init__(df, variable, time_step )
+        super().__init__(df, variable, time_step , mode , start_date , end_date)
         self.climatology_df = pd.DataFrame()
         
         
@@ -364,21 +411,4 @@ class Climatology(Aggregation):
     
 
 
-
-
-if __name__ == "__main__":
     
-    # Example usage
-    from pathlib import Path
-    from ssmad.data_reader import extract_obs_ts
-    ascat_path = Path("/home/m294/VSA/Code/datasets")
-    
-    # Morocco
-    lat = 33.201
-    lon = -7.373
-    
-    sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-
-    
-    climatology = Climatology(sm_ts, "sm", "dekad", ["mean",'median','min','max'])
-    print(climatology.climatology(month = 2))
