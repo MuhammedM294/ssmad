@@ -23,6 +23,7 @@ import numpy as np
 from typing import List
 from scipy.stats import gaussian_kde
 from scipy.stats import norm
+from ssmad.utils import create_logger , log_time
 
 
 class AnomalyDetector(Climatology):
@@ -156,7 +157,7 @@ class Z_Score(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
-        self.anomaly_df['z_score'] = (self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-mean']) / self.anomaly_df['normal-std']
+        self.anomaly_df['zscore'] = (self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-mean']) / self.anomaly_df['normal-std']
         return self.anomaly_df
     
 
@@ -251,12 +252,12 @@ class SMDI(AnomalyDetector):
         
         """
         
-        df['SMDI'] = 0.0
+        df['smdi'] = 0.0
         df.reset_index(inplace=True)
-        df['SMDI'] = 0.5 * df['SMDI'].shift(1) + df['SD'] / 50
-        df.loc[0, 'SMDI'] = df.loc[0, 'SD'] / 50
+        df['smdi'] = 0.5 * df['smdi'].shift(1) + df['SD'] / 50
+        df.loc[0, 'smdi'] = df.loc[0, 'SD'] / 50
         for i in range(1, len(df)):
-            df.loc[i, 'SMDI'] = 0.5 * df.loc[i-1, 'SMDI'] + df.loc[i, 'SD'] / 50
+            df.loc[i, 'smdi'] = 0.5 * df.loc[i-1, 'smdi'] + df.loc[i, 'SD'] / 50
         return df
     
     def _finalize(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -351,7 +352,7 @@ class ESSMI(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
-        self.anomaly_df['z'] = norm.ppf(self.anomaly_df['ecdf'])    
+        self.anomaly_df['essmi'] = norm.ppf(self.anomaly_df['ecdf'])    
         return self.anomaly_df
     
 class SMAD(AnomalyDetector):
@@ -391,7 +392,7 @@ class SMAD(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)   
-        self.anomaly_df['SMAD'] = (self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-median']) / self.anomaly_df['IQR']     
+        self.anomaly_df['smad'] = (self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-median']) / self.anomaly_df['IQR']     
         return self.anomaly_df
     
 class SMDS(AnomalyDetector):
@@ -439,7 +440,7 @@ class SMDS(AnomalyDetector):
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
         for metric in self.metrics:
-             self.anomaly_df[f'SMDS-{metric}'] = 1 - self.anomaly_df[f"SMP-{metric}"] 
+             self.anomaly_df[f'smds-{metric}'] = 1 - self.anomaly_df[f"SMP-{metric}"] 
         return self.anomaly_df
     
 class SMCI(AnomalyDetector):
@@ -477,7 +478,7 @@ class SMCI(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
-        self.anomaly_df['SMCI'] = ((self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-min']) / (self.anomaly_df['normal-max'] - self.anomaly_df['normal-min'])) * 100
+        self.anomaly_df['smci'] = ((self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-min']) / (self.anomaly_df['normal-max'] - self.anomaly_df['normal-min'])) * 100
         return self.anomaly_df
     
 class SMCA(AnomalyDetector):
@@ -519,8 +520,8 @@ class SMCA(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
-        self.anomaly_df['SMA-mean'] = ((self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-mean']) / (self.anomaly_df['normal-max'] - self.anomaly_df['normal-min'])) * 100
-        self.anomaly_df['SMA-median'] = ((self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-median']) / (self.anomaly_df['normal-max'] - self.anomaly_df['normal-min'])) * 100
+        self.anomaly_df['sma_mean'] = ((self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-mean']) / (self.anomaly_df['normal-max'] - self.anomaly_df['normal-min'])) * 100
+        self.anomaly_df['sma_median'] = ((self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-median']) / (self.anomaly_df['normal-max'] - self.anomaly_df['normal-min'])) * 100
         return self.anomaly_df
     
 
@@ -534,7 +535,9 @@ if __name__ == "__main__":
     # Morocco
     lat = 33.201
     lon = -7.373
-    
+    logger = create_logger('anomaly_logger')
+        
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-    print(SMAD(sm_ts, "sm" , 'week').detect_anomaly(month = 5))
+    print(SMDI(sm_ts, "sm" , 'month').detect_anomaly())
+    
 
