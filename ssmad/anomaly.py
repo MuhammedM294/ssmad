@@ -97,7 +97,7 @@ class AnomalyDetector(Climatology):
         
         """
         self._validate_input()
-        self.climatology_df = self.climatology(**kwargs)
+        self.climatology_df = self.compute_climatology(**kwargs)
         self.groupby_param = self._group_by(self.climatology_df)
         return self.climatology_df
     
@@ -535,7 +535,6 @@ if __name__ == "__main__":
     # Morocco
     lat = 33.201
     lon = -7.373
-    logger = create_logger('anomaly_logger')
         
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
     print(SMDI(sm_ts, "sm" , 'month').detect_anomaly())
