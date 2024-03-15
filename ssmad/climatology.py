@@ -6,8 +6,9 @@ using different metrics (mean, median, min, max).
 __author__ = "Muhammed Abdelaal"
 __email__ = "muhammedaabdelaal@gmail.com"
 
-import pandas as pd
 from typing import List, Union
+import pandas as pd
+
 
 class Aggregator:
     """

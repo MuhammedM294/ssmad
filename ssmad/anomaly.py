@@ -16,14 +16,12 @@ A module for soil moisture anomalies calculation methods based on climatology. T
 __author__ = "Muhammed Abdelaal"
 __email__ = "muhammedaabdelaal@gmail.com"
 
-
-from ssmad.climatology import *
+from typing import List
 import pandas as pd
 import numpy as np
-from typing import List
 from scipy.stats import gaussian_kde
 from scipy.stats import norm
-from ssmad.utils import create_logger , log_time
+from ssmad.climatology import Climatology
 
 
 class AnomalyDetector(Climatology):
@@ -534,8 +532,7 @@ if __name__ == "__main__":
     
     # Morocco
     lat = 33.201
-    lon = -7.373
-        
+    lon = -7.373        
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
     print(SMDI(sm_ts, "sm" , 'month').detect_anomaly())
     
