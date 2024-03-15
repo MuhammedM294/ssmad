@@ -39,7 +39,7 @@ To get started with SSMAD, follow these steps:
 
    ::
 
-      python run_workflow.py
+      python workflow.py
 
 License
 -------
