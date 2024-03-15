@@ -9,7 +9,7 @@ __email__ = "muhammedaabdelaal@gmail.com"
 import pandas as pd
 from typing import List, Union
 
-class Aggregation:
+class Aggregator:
     """
     Base class for aggregation
 
@@ -164,7 +164,7 @@ class Aggregation:
         pass
 
 
-class MonthlyAggregation(Aggregation):
+class MonthlyAggregator(Aggregator):
     """
     Aggregates the time series data based on month-based time step.     
     """
@@ -176,7 +176,7 @@ class MonthlyAggregation(Aggregation):
         self.resulted_df[f"{self.variable}-avg"] = self.df.groupby([self.df.index.year, self.df.index.month])[self.variable].transform('mean')
         return self.resulted_df
 
-class DekadalAggregation(Aggregation):
+class DekadalAggregator(Aggregator):
     """
     Aggregates the data based on dekad-based time step.
     """
@@ -190,7 +190,7 @@ class DekadalAggregation(Aggregation):
         self.resulted_df[f"{self.variable}-avg"] = self.df.groupby([self.df.index.year, self.df.index.month, self.df['dekad']])[self.variable].transform('mean')
         return self.resulted_df
 
-class WeeklyAggregation(Aggregation):
+class WeeklyAggregator(Aggregator):
     """
     Aggregates the time series data based on week-based time step.
     """
@@ -201,31 +201,10 @@ class WeeklyAggregation(Aggregation):
     def aggregate(self):
         self.resulted_df[f"{self.variable}-avg"] = self.df.groupby([self.df.index.year, self.df.index.isocalendar().week])[self.variable].transform('mean')
         return self.resulted_df
-
-class Aggregator(Aggregation):
-    """
-    Aggregates the time series data based on the specified time step.
-
-    Methods:
-    --------
-    aggregate():
-        Aggregates the data based on the specified time step and removes duplicates.
-    """
-    def __init__(self, df, variable, time_step):
-        super().__init__(df, variable, time_step)
-        
-
-    def aggregate(self ):
-        if self.time_step == 'month':
-            return MonthlyAggregation(self.df, self.variable).aggregate().drop_duplicates()
-        elif self.time_step == 'dekad':
-            return DekadalAggregation(self.df, self.variable).aggregate().drop_duplicates()
-        elif self.time_step == 'week':
-            return WeeklyAggregation(self.df, self.variable).aggregate().drop_duplicates()
         
 
 
-class Climatology(Aggregation):
+class Climatology(Aggregator):
     """
     A class for calculating climatology(climate normal) for time series data.
 
@@ -357,7 +336,13 @@ class Climatology(Aggregation):
         Aggregates the data based on the time step and metrics provided.
         
         """
-        return Aggregator(self.df, self.variable, self.time_step).aggregate()
+        if self.time_step == 'month':
+             return MonthlyAggregator(self.df, self.variable).aggregate().drop_duplicates()
+        elif self.time_step == 'dekad':
+             return DekadalAggregator(self.df, self.variable).aggregate().drop_duplicates()
+        elif self.time_step == 'week':
+             return WeeklyAggregator(self.df, self.variable).aggregate().drop_duplicates()
+        
     
     
     def _group_by(self , df):
@@ -386,7 +371,7 @@ class Climatology(Aggregation):
             return [df['dekad'] , df.index.month]
         
 
-    def climatology(self, **kwargs) -> pd.DataFrame:
+    def compute_climatology(self, **kwargs) -> pd.DataFrame:
         """
         Calculates climatology based on the aggregated data.
 
@@ -409,6 +394,20 @@ class Climatology(Aggregation):
         
         return self._filter_df(self.climatology_df, **kwargs)
     
+
+if __name__ == "__main__":
+    
+    from pathlib import Path
+    from ssmad.data_reader import extract_obs_ts
+    ascat_path = Path("/home/m294/VSA/Code/datasets")
+    
+    # Morocco
+    lat = 33.201
+    lon = -7.373
+        
+    sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
+    
+    print(Climatology(sm_ts, "sm", "dekad", ["mean"]).compute_climatology(year = 2022))    
 
 
     
