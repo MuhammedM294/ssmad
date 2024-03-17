@@ -1,9 +1,11 @@
+import random
 from unittest.mock import Mock
 import pytest
 import pandas as pd
 from ssmad.climatology import Aggregator, MonthlyAggregator,\
                               DekadalAggregator, WeeklyAggregator,\
-                              BimonthlyAggregator, DailyAggregator\
+                              BimonthlyAggregator, DailyAggregator,\
+                              Climatology
                               
 
 
@@ -361,12 +363,6 @@ class TestDailyAggregator(TestAggregator):
         
         assert daily_obs[variable].mean() == pytest.approx(daily_avg[f"{variable}-avg"].iloc[0])    
 
-        
-    def test_drop_duplicates(self , aggregator, variable = "sm"):
-        """
-        Test the drop_duplicates of DailyAggregator class.
-        """
-        super().test_drop_duplicates(aggregator)
     
     def test_aggregate_filter_df(data_sample , aggregator):
         """
@@ -377,9 +373,174 @@ class TestDailyAggregator(TestAggregator):
         # Check if aggregation result has 1 row (January 1, 2022)
         assert len(resulted_df) == 1
     
+
+
+class TestClimatology:
+    """
+    Class for testing the Climatology class.
+    """
+    
+    @pytest.fixture
+    def climatology(self, data_sample):
+        """
+        Fixture to create an instance of Climatology for testing.
+        """
+        return Climatology(df = data_sample, variable="sm", time_step='month',\
+             metrics=['mean']
+            )
+        
+    @pytest.fixture
+    def clim_metrics_all(self, data_sample):
+        """
+        Fixture to create an instance of Climatology for testing.
+        """
+        return Climatology(df = data_sample, variable="sm", time_step='month',\
+             metrics=['mean','median','min','max']
+            )
+        
+        
+    def test_initialization(self, climatology, data_sample):
+        """
+        Test the initialization of the Climatology class.
+        """
+        assert climatology is not None
+        assert climatology.original_df.equals(data_sample)
+        assert climatology.variable == "sm"
+        assert climatology.mode == "all"
+        assert climatology.smoothing == False
+        assert climatology.window_size == None
+        assert climatology.start_date == None   
+        assert climatology.end_date == None
+        assert climatology.time_step == "month"
+        assert climatology.metrics == ['mean']
         
         
         
+    def test_validation(self, data_sample, _class = Climatology):
+        """
+        Test validation of input parameters.
+        """
+        
+        # Test for invalid input parameter for the pandas DataFrame
+        with pytest.raises(TypeError):
+            _class([], "sm", "month" , ['mean'] )
+        
+        # Test for invalid input parameter for the pandas DataFrame not having a datetime index
+        with pytest.raises(ValueError):
+            _class(pd.DataFrame(), "sm" , "month" , ['mean'])
+         
+        # Test for invalid input parameter for the variable   
+        with pytest.raises(ValueError):
+            _class(data_sample, "invalid_column" , "month" , ['mean'])
+            
+        # Test for invalid input parameter for the time_step   
+        with pytest.raises(ValueError):
+            _class(data_sample, "sm", time_step = "invalid_time_step", metrics=['mean'])
+            
+        # Test for invalid input parameter for the metrics   
+        with pytest.raises(ValueError):
+            _class(data_sample, "sm","month" ,metrics = ["invalid_metric","another_invalid_metric"] )
+            
+            
+    @pytest.mark.parametrize("time_steps, _class", [
+        ("month", MonthlyAggregator),
+        ("dekad", DekadalAggregator),
+        ("week", WeeklyAggregator),
+        ("bimonth", BimonthlyAggregator),
+        ("day", DailyAggregator)
+    ])
+    def test_aggregate(self, climatology, time_steps, _class):
+        """
+        Test the aggregation method of Climatology class.
+        """
+        
+        climatology.time_step = time_steps
+        df = climatology.aggregate()
+        assert isinstance(df, pd.DataFrame)
+        assert f"{climatology.variable}-avg" in df.columns
+        assert (df == _class(climatology.original_df, climatology.variable).aggregate()).all().all()    
+            
+        
+
+    @pytest.mark.parametrize("time_step, metric, month, dekad, week, bimonth, day", 
+        [
+        ("month", 'mean', 2, None, None, None, None),
+        ("month", 'median', 5, None, None, None, None),
+        ("month", 'min', 8, None, None, None, None),
+        ("month", 'max', 12, None, None, None, None),
+        ("dekad", 'mean', 1, 1, None, None, None),
+        ("dekad", 'median', 5, 2, None, None, None),
+        ("dekad", 'min', 12, 3, None, None, None),
+        ("dekad", 'max', 10, 1, None, None, None),
+        ("week", 'mean', None, None, 10, None, None),
+        ("week", 'median', None, None, 20, None, None),
+        ("week", 'min', None, None, 30, None, None),
+        ("week", 'max', None, None, 40, None, None),
+        ("bimonth", 'mean', 12, None, None, 1, None),
+        ("bimonth", 'median', 8, None, None, 2, None),
+        ("bimonth", 'min', 4, None, None, 1, None),
+        ("bimonth", 'max', 5, None, None, 2, None),
+        ("day", 'mean', 2, None, None, None, 15),
+        ("day", 'median', 7, None, None, None, 27),
+        ("day", 'min', 12, None, None, None, 22),
+        ("day", 'max', 4, None, None, None, 14)
+        ])
+    
+    
+    def test_climatology_compute_without_smoothing(self, clim_metrics_all, time_step, metric, month, dekad, week, bimonth, day):
+        """
+        Test the climate normals computed by Climatology class for different time steps,
+              months, dekads, weeks, bimonths, and days with different metrics.
+        """
+        clim_metrics_all.time_step = time_step
+        df = clim_metrics_all.compute_climatology(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
+        
+        expected_normal = df[f"{clim_metrics_all.variable}-avg"].agg(metric)
+        computed_normal = random.choice(df[f'normal-{metric}'])
+        assert computed_normal == pytest.approx(expected_normal, rel=1e-4)
+        
+    @pytest.mark.parametrize("time_step, metric, month, dekad, week, bimonth, day , window_size",
+        [
+        ("month", 'mean', 2, None, None, None, None, 5),
+        ("month", 'median', 5, None, None, None, None,7),
+        ("month", 'min', 8, None, None, None, None,3),
+        ("month", 'max', 12, None, None, None, None,9),
+        ("dekad", 'mean', 1, 1, None, None, None,11),
+        ("dekad", 'median', 5, 2, None, None, None,15),
+        ("dekad", 'min', 12, 3, None, None, None,13),
+        ("dekad", 'max', 10, 1, None, None, None,15),
+        ("week", 'mean', None, None, 10, None, None,17),
+        ("week", 'median', None, None, 20, None, None,19),
+        ("week", 'min', None, None, 30, None, None,21),
+        ("week", 'max', None, None, 40, None, None,23),
+        ("bimonth", 'mean', 12, None, None, 1, None,25),
+        ("bimonth", 'median', 8, None, None, 2, None,27),
+        ("bimonth", 'min', 4, None, None, 1, None,29),
+        ("bimonth", 'max', 5, None, None, 2, None,31),
+        ("day", 'mean', 2, None, None, None, 15,33),
+        ("day", 'median', 7, None, None, None, 27,35),
+        ("day", 'min', 12, None, None, None, 22,37),
+        ("day", 'max', 4, None, None, None, 14,39)
+        ])
+    
+    def test_climatology_compute_with_smoothing(self, clim_metrics_all, time_step, metric, month, dekad, week, bimonth, day, window_size):
+        """
+        Test the climate normals computed by Climatology class for different time steps,
+              months, dekads, weeks, bimonths, and days with different metrics and smoothing.
+        """
+        clim_metrics_all.time_step = time_step
+        clim_metrics_all.smoothing = True
+        clim_metrics_all.window_size = window_size
+        df = clim_metrics_all.compute_climatology(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
+        
+        expected_normal = df[f"{clim_metrics_all.variable}-avg"].agg(metric)
+        computed_normal = random.choice(df[f'normal-{metric}'])
+        assert computed_normal == pytest.approx(expected_normal, rel=1e-4)
+       
+
+            
+    
+
     
    
     
