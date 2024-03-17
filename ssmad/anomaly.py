@@ -534,6 +534,9 @@ if __name__ == "__main__":
     lat = 33.201
     lon = -7.373        
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
+    data_sample = pd.DataFrame(sm_ts)
+    # save the data sample to a csv file
+    data_sample.to_csv("data_sample.csv")
     print(SMDI(sm_ts, "sm" , 'month').detect_anomaly())
     
 
