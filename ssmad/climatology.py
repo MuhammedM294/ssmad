@@ -343,7 +343,7 @@ class DailyAggregator(Aggregator):
 
     def aggregate(self , **kwargs):
         self.resulted_df[f"{self.variable}-avg"] = self.df[self.variable]
-        return self._filter_df(self.resulted_df.drop_duplicates() , **kwargs)
+        return self._filter_df(self.resulted_df , **kwargs)
         
 
 
@@ -490,8 +490,10 @@ class Climatology(Aggregator):
         
         elif self.time_step == 'dekad':
             return [df['dekad'] , df.index.month]
+        
         elif self.time_step == 'bimonth':
             return [df['bimonth'] , df.index.month]
+        
         elif self.time_step == 'day':
             return [df.index.day, df.index.month]
 
@@ -530,8 +532,8 @@ if __name__ == "__main__":
     lon = -7.373
         
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-    df  = Aggregator(sm_ts, "sm" , mode = 'all').aggregate(year = 2015 , bimonth = 1, month = 5)
+    df  = Climatology(sm_ts, "sm", "day", ["mean",'median', 'max','min']).compute_climatology(month = 12, day = 12)
     print(df)
-    print("------------------------------------------------")
-    df  = WeeklyAggregator(sm_ts, "sm" , mode = 'all').aggregate(year = 2015 , week = 15)
-    print(df)
+    import random
+    
+    print(random.choice(df['normal-mean']))
