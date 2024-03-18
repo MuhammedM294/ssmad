@@ -155,7 +155,10 @@ class Z_Score(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
-        self.anomaly_df['zscore'] = (self.anomaly_df[f"{self.variable}-avg"] - self.anomaly_df['normal-mean']) / self.anomaly_df['normal-std']
+        self.anomaly_df['zscore'] = (self.anomaly_df[f"{self.variable}-avg"]\
+                                   - self.anomaly_df['normal-mean']) / self.anomaly_df['normal-std']
+        
+
         return self.anomaly_df
     
 
@@ -528,15 +531,15 @@ if __name__ == "__main__":
     # Example usage
     from pathlib import Path
     from ssmad.data_reader import extract_obs_ts
+    import time
     ascat_path = Path("/home/m294/VSA/Code/datasets")
     
     # Morocco
     lat = 33.201
     lon = -7.373        
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-    data_sample = pd.DataFrame(sm_ts)
-    # save the data sample to a csv file
-    data_sample.to_csv("data_sample.csv")
-    print(SMDI(sm_ts, "sm" , 'month').detect_anomaly())
     
+    
+    df = Z_Score(sm_ts, "sm" , 'day').detect_anomaly()
+    print(df.head())    
 
