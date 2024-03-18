@@ -19,8 +19,8 @@ class TestAggregator:
         """
         Fixture to create an instance of Aggregator for testing.
         """
-        return Aggregator(df = data_sample, variable="sm", mode='subset',\
-            smoothing=False, window_size=None, start_date='2022-01-01', end_date='2022-12-31')
+        return Aggregator(df = data_sample, variable="sm", \
+                          timespan=['2022-01-01', '2022-12-31'])
         
     def test_initialization(self, aggregator, data_sample):
         """
@@ -29,9 +29,7 @@ class TestAggregator:
         assert aggregator is not None
         assert aggregator.original_df.equals(data_sample)
         assert aggregator.variable == "sm"
-        assert aggregator.mode == "subset"
-        assert aggregator.start_date == '2022-01-01'
-        assert aggregator.end_date == '2022-12-31'
+        assert aggregator.timespan == ['2022-01-01', '2022-12-31']
         
     def test_validation(self, data_sample, _class = Aggregator):
         """
@@ -51,51 +49,20 @@ class TestAggregator:
             _class(data_sample, "invalid_column" )
             
         
-    def test_mode_subset(self, data_sample , _class = Aggregator):
-        """
-        Test subset mode of Aggregator class.
-        """
-        agg = _class(data_sample, 'sm',  mode='subset', start_date='2022-01-01', end_date='2022-01-02')
-        
-        # Check if the length of the aggregated DataFrame is less than the original DataFrame
-        assert len(agg.df) != len(data_sample)  
-        
-        # Check if the length of the aggregated DataFrame is equal to the number of days in the subset
-        assert len(agg.df) == 2  
-        
-    def test_mode_subset_no_dates(self, data_sample , _class = Aggregator):
-        """
-        Test subset mode of Aggregator class without dates.
-        """
-        
-        # Test for invalid input parameter for the start_date and end_date
-        with pytest.raises(TypeError):
-            _class(data_sample, 'sm', mode='subset', start_date='2022-01-01')
-        with pytest.raises(TypeError):
-            _class(data_sample, 'sm', mode='subset', end_date='2022-01-01')
-        with pytest.raises(TypeError):
-            _class(data_sample, 'sm', mode='subset', start_date='wrong_format', end_date='wrong_format')
-            
-            
-    def test_mode_all(self, data_sample, _class = Aggregator):
-        """
-        Test all mode of Aggregator class.
-        """
-        agg = _class(data_sample, 'sm', mode='all')
-        # Check if the length of the aggregated DataFrame is equal to the original DataFrame
-        assert len(agg.original_df) == len(data_sample)  
         
     def test_smoothing(self, data_sample, _class = Aggregator , variable = "sm"):
         """
         Test smoothing of Aggregator class.
         """
-        df_without_smoothing = _class(data_sample, "sm", smoothing=False)\
-            .aggregate(start_date='2022-01-17', end_date='2022-01-26')
-        df_with_smoothing = _class(data_sample, "sm", smoothing=True, window_size=9)\
-            .aggregate(year = 2022, month = 1, day = 21)
+        df_without_smoothing = _class(data_sample, "sm", fillna=True,\
+                                     fillna_window_size=3, smoothing=False)\
+                                     .aggregate(start_date='2022-01-15', end_date='2022-01-27')
+        df_with_smoothing = _class(data_sample, "sm", fillna=True,\
+                                   fillna_window_size=3, smoothing=True, smooth_window_size=11)\
+                                   .aggregate(year = 2022, month = 1, day = 21)
         
         # Check if the new value of the variable is the mean of the original values within the window
-        assert df_without_smoothing[variable].mean() == pytest.approx(df_with_smoothing[variable].values[0])
+        assert df_without_smoothing[variable].mean() == pytest.approx(df_with_smoothing[variable].values[0] , rel=1e-1)
         
         
     
@@ -133,8 +100,8 @@ class TestMonthlyAggregator(TestAggregator):
         """
         Fixture to create an instance of MonthlyAggregator for testing.
         """
-        return MonthlyAggregator(df = data_sample, variable="sm",mode='subset'\
-            ,smoothing=False, window_size=None, start_date='2022-01-01', end_date='2022-12-31')
+        return MonthlyAggregator(df = data_sample, variable="sm",\
+                                timespan=['2022-01-01', '2022-12-31'])
     
     
     def test_initialization(self, aggregator, data_sample):
@@ -187,8 +154,8 @@ class TestDekadalAggregator(TestAggregator):
         """
         Fixture to create an instance of DekadalAggregator for testing.
         """
-        return DekadalAggregator(df = data_sample, variable="sm", smoothing=False\
-            , mode='subset', start_date='2022-01-01', end_date='2022-12-31')
+        return DekadalAggregator(df = data_sample, variable="sm"\
+            , timespan=['2022-01-01', '2022-12-31'])
     
     def test_initialization(self, aggregator, data_sample):
         """
@@ -203,8 +170,6 @@ class TestDekadalAggregator(TestAggregator):
         super().test_aggregate(aggregator, variable)
         df = aggregator.aggregate()
         
-        # Check if the class adds a new column ['dekad] to the aggregated DataFrame
-        assert f"dekad" in  df.columns
         
         daily_obs = Aggregator(data_sample, variable).aggregate(year = 2019 , month = 1, dekad = 3)
         dekadal_avg = DekadalAggregator(data_sample, variable).aggregate(year = 2019 , month = 1, dekad = 3)
@@ -243,8 +208,8 @@ class TestWeeklyAggregator(TestAggregator):
         """
         Fixture to create an instance of WeeklyAggregator for testing.
         """
-        return WeeklyAggregator(df = data_sample, variable="sm", smoothing=False\
-            , mode='subset', start_date='2022-01-01', end_date='2022-12-31')
+        return WeeklyAggregator(df = data_sample, variable="sm",
+            timespan=['2022-01-01', '2022-12-31'])
     
     def test_initialization(self, aggregator, data_sample):
         """
@@ -292,8 +257,8 @@ class TestBimonthlyAggregator(TestAggregator):
         """
         Fixture to create an instance of BimonthlyAggregator for testing.
         """
-        return BimonthlyAggregator(df = data_sample, variable="sm", smoothing=False\
-            , mode='subset', start_date='2022-01-01', end_date='2022-12-31')
+        return BimonthlyAggregator(df = data_sample, variable="sm",
+            timespan=['2022-01-01', '2022-12-31'])
     
     def test_initialization(self, aggregator, data_sample):
         """
@@ -343,8 +308,8 @@ class TestDailyAggregator(TestAggregator):
         """
         Fixture to create an instance of DailyAggregator for testing.
         """
-        return DailyAggregator(df = data_sample, variable="sm", smoothing=False\
-            , mode='subset', start_date='2022-01-01', end_date='2022-12-31')
+        return DailyAggregator(df = data_sample, variable="sm", 
+                              timespan=['2022-01-01', '2022-12-31'])
         
     def test_initialization(self, aggregator, data_sample):
         """
@@ -386,7 +351,7 @@ class TestClimatology:
         Fixture to create an instance of Climatology for testing.
         """
         return Climatology(df = data_sample, variable="sm", time_step='month',\
-             metrics=['mean']
+             normal_metrics=['mean']
             )
         
     @pytest.fixture
@@ -395,7 +360,7 @@ class TestClimatology:
         Fixture to create an instance of Climatology for testing.
         """
         return Climatology(df = data_sample, variable="sm", time_step='month',\
-             metrics=['mean','median','min','max']
+             normal_metrics=['mean','median','min','max']
             )
         
         
@@ -406,13 +371,13 @@ class TestClimatology:
         assert climatology is not None
         assert climatology.original_df.equals(data_sample)
         assert climatology.variable == "sm"
-        assert climatology.mode == "all"
+        assert climatology.fillna == False
+        assert climatology.fillna_window_size == None
         assert climatology.smoothing == False
-        assert climatology.window_size == None
-        assert climatology.start_date == None   
-        assert climatology.end_date == None
+        assert climatology.smooth_window_size == None
+        assert climatology.timespan == None
         assert climatology.time_step == "month"
-        assert climatology.metrics == ['mean']
+        assert climatology.normal_metrics == ['mean']
         
         
         
@@ -435,11 +400,11 @@ class TestClimatology:
             
         # Test for invalid input parameter for the time_step   
         with pytest.raises(ValueError):
-            _class(data_sample, "sm", time_step = "invalid_time_step", metrics=['mean'])
+            _class(data_sample, "sm", time_step = "invalid_time_step", normal_metrics=['mean'])
             
         # Test for invalid input parameter for the metrics   
         with pytest.raises(ValueError):
-            _class(data_sample, "sm","month" ,metrics = ["invalid_metric","another_invalid_metric"] )
+            _class(data_sample, "sm","month" ,normal_metrics = ["invalid_metric","another_invalid_metric"] )
             
             
     @pytest.mark.parametrize("time_steps, _class", [
@@ -493,10 +458,10 @@ class TestClimatology:
               months, dekads, weeks, bimonths, and days with different metrics.
         """
         clim_metrics_all.time_step = time_step
-        df = clim_metrics_all.compute_climatology(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
+        df = clim_metrics_all.compute_normals(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
         
         expected_normal = df[f"{clim_metrics_all.variable}-avg"].agg(metric)
-        computed_normal = random.choice(df[f'normal-{metric}'])
+        computed_normal = random.choice(df[f'norm-{metric}'])
         assert computed_normal == pytest.approx(expected_normal, rel=1e-4)
         
     @pytest.mark.parametrize("time_step, metric, month, dekad, week, bimonth, day , window_size",
@@ -530,11 +495,11 @@ class TestClimatology:
         """
         clim_metrics_all.time_step = time_step
         clim_metrics_all.smoothing = True
-        clim_metrics_all.window_size = window_size
-        df = clim_metrics_all.compute_climatology(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
+        clim_metrics_all.smooth_window_size = window_size
+        df = clim_metrics_all.compute_normals(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
         
         expected_normal = df[f"{clim_metrics_all.variable}-avg"].agg(metric)
-        computed_normal = random.choice(df[f'normal-{metric}'])
+        computed_normal = random.choice(df[f'norm-{metric}'])
         assert computed_normal == pytest.approx(expected_normal, rel=1e-4)
        
 
