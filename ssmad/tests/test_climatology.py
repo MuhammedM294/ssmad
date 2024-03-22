@@ -28,7 +28,7 @@ class TestAggregator:
         """
         assert aggregator is not None
         assert aggregator.original_df.equals(data_sample)
-        assert aggregator.variable == "sm"
+        assert aggregator.var == "sm"
         assert aggregator.timespan == ['2022-01-01', '2022-12-31']
         
     def test_validation(self, data_sample, _class = Aggregator):
@@ -228,7 +228,7 @@ class TestWeeklyAggregator(TestAggregator):
         
         assert daily_obs[variable].mean() == pytest.approx(weekly_obs[f"{variable}-avg"].iloc[0])
     
-    def test_drop_duplicates(self , aggregator, variable = "sm"):
+    def test_drop_duplicates(self , aggregator):
         """
         Test the drop_duplicates of WeeklyAggregator class.
         """
@@ -370,7 +370,7 @@ class TestClimatology:
         """
         assert climatology is not None
         assert climatology.original_df.equals(data_sample)
-        assert climatology.variable == "sm"
+        assert climatology.var == "sm"
         assert climatology.fillna == False
         assert climatology.fillna_window_size == None
         assert climatology.smoothing == False
@@ -422,8 +422,8 @@ class TestClimatology:
         climatology.time_step = time_steps
         df = climatology.aggregate()
         assert isinstance(df, pd.DataFrame)
-        assert f"{climatology.variable}-avg" in df.columns
-        assert (df == _class(climatology.original_df, climatology.variable).aggregate()).all().all()    
+        assert f"{climatology.var}-avg" in df.columns
+        assert (df == _class(climatology.original_df, climatology.var).aggregate()).all().all()    
             
         
 
@@ -460,7 +460,7 @@ class TestClimatology:
         clim_metrics_all.time_step = time_step
         df = clim_metrics_all.compute_normals(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
         
-        expected_normal = df[f"{clim_metrics_all.variable}-avg"].agg(metric)
+        expected_normal = df[f"{clim_metrics_all.var}-avg"].agg(metric)
         computed_normal = random.choice(df[f'norm-{metric}'])
         assert computed_normal == pytest.approx(expected_normal, rel=1e-4)
         
@@ -498,7 +498,7 @@ class TestClimatology:
         clim_metrics_all.smooth_window_size = window_size
         df = clim_metrics_all.compute_normals(month=month, dekad=dekad, week=week, bimonth=bimonth, day=day)
         
-        expected_normal = df[f"{clim_metrics_all.variable}-avg"].agg(metric)
+        expected_normal = df[f"{clim_metrics_all.var}-avg"].agg(metric)
         computed_normal = random.choice(df[f'norm-{metric}'])
         assert computed_normal == pytest.approx(expected_normal, rel=1e-4)
        
