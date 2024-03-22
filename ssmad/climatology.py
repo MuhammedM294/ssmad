@@ -79,7 +79,7 @@ class Aggregator:
         """ 
         
         self.original_df = df
-        self.variable = variable
+        self.var = variable
         self.fillna = fillna
         self.fillna_window_size = fillna_window_size
         self.smoothing = smoothing
@@ -87,7 +87,7 @@ class Aggregator:
         self.timespan = timespan
         
         self._validate_input()
-        self.df = pd.DataFrame(self.original_df[self.variable]).resample('D').mean()
+        self.df = pd.DataFrame(self.original_df[self.var]).resample('D').mean()
         self.df = self.df.truncate(before=timespan[0], after=timespan[1]) if timespan else self.df
         self._fillna()
         self._smooth()
@@ -99,14 +99,14 @@ class Aggregator:
         Fills NaN values in the time series data using a moving window average.
         """
         if self.fillna:
-            self.df[self.variable] = fillna(self.df, self.variable, self.fillna_window_size)
+            self.df[self.var] = fillna(self.df, self.var, self.fillna_window_size)
             
     def _smooth(self):
         """
         Smooths the time series data using a moving window average.
         """
         if self.smoothing:
-            self.df[self.variable] = smooth(self.df, self.variable, self.smooth_window_size)
+            self.df[self.var] = smooth(self.df, self.var, self.smooth_window_size)
     
     
     
@@ -140,8 +140,8 @@ class Aggregator:
             If the variable is not found in the input DataFrame columns.
             
         """
-        if self.variable not in self.original_df.columns:
-            raise ValueError(f"Variable '{self.variable}' not found in the input DataFrame columns.")
+        if self.var not in self.original_df.columns:
+            raise ValueError(f"Variable '{self.var}' not found in the input DataFrame columns.")
         
     def _validate_fillna_smoothing(self):
    
@@ -192,7 +192,7 @@ class MonthlyAggregator(Aggregator):
 
     def aggregate(self, **kwargs):
         
-        self.resulted_df[f"{self.variable}-avg"] = monthly_agg(self.df, self.variable)
+        self.resulted_df[f"{self.var}-avg"] = monthly_agg(self.df, self.var)
 
         return filter_df(self.resulted_df , **kwargs)
 
@@ -210,7 +210,7 @@ class DekadalAggregator(Aggregator):
 
     def aggregate(self , **kwargs):
         
-        self.resulted_df[f"{self.variable}-avg"]  = dekadal_agg(self.df, self.variable)
+        self.resulted_df[f"{self.var}-avg"]  = dekadal_agg(self.df, self.var)
         
         return filter_df(self.resulted_df , **kwargs)
 
@@ -227,7 +227,7 @@ class WeeklyAggregator(Aggregator):
 
     def aggregate(self , **kwargs):
         
-        self.resulted_df[f"{self.variable}-avg"] = weekly_agg(self.df, self.variable)
+        self.resulted_df[f"{self.var}-avg"] = weekly_agg(self.df, self.var)
         
         return filter_df(self.resulted_df , **kwargs)
     
@@ -245,7 +245,7 @@ class BimonthlyAggregator(Aggregator):
 
     def aggregate(self , **kwargs):
         
-        self.resulted_df[f"{self.variable}-avg"] = bimonthly_agg(self.df, self.variable)
+        self.resulted_df[f"{self.var}-avg"] = bimonthly_agg(self.df, self.var)
         
         return filter_df(self.resulted_df , **kwargs)
     
@@ -263,7 +263,7 @@ class DailyAggregator(Aggregator):
         
 
     def aggregate(self , **kwargs):
-        self.resulted_df[f"{self.variable}-avg"] = self.df[self.variable]
+        self.resulted_df[f"{self.var}-avg"] = self.df[self.var]
         return filter_df(self.resulted_df.drop_duplicates() , **kwargs)
         
 
@@ -303,11 +303,8 @@ class Climatology(Aggregator):
 
     normal_metrics: List[str]
         The metrics to be used in the climatology computation. Supported values: 'mean', 'median', 'min', 'max', etc.
-        
-    resulted_df: pd.DataFrame
-        The resulting DataFrame storing the aggregated data.
 
-    climatology_df: pd.DataFrame
+    clima_df: pd.DataFrame
         The DataFrame containing climatology information.
 
     Methods:
@@ -321,7 +318,7 @@ class Climatology(Aggregator):
     _validate_metrics:
         Validates the metrics to be used in the climatology computation.
 
-    climatology:
+    compute_normals:
         Calculates climatology based on the aggregated data.
     """
     
@@ -338,7 +335,7 @@ class Climatology(Aggregator):
         self.valid_time_steps = ["month", "dekad", "week", "day", "bimonth"]
         self.valid_metrics = ["mean", "median", "min", "max"]
         super().__init__(df, variable, fillna,fillna_window_size, smoothing, smooth_window_size, timespan)
-        self.climatology_df = pd.DataFrame()
+        self.clim_df = pd.DataFrame()
         
           
     def _validate_time_step(self,) -> None:
@@ -379,23 +376,23 @@ class Climatology(Aggregator):
         
         """
         if self.time_step == 'month':
-             return MonthlyAggregator(self.df, self.variable ,self.fillna,
+             return MonthlyAggregator(self.df, self.var ,self.fillna,
                                         self.fillna_window_size, self.smoothing, self.smooth_window_size, self.timespan).aggregate()
              
         elif self.time_step == 'week':
-            return WeeklyAggregator(self.df, self.variable ,self.fillna,
+            return WeeklyAggregator(self.df, self.var ,self.fillna,
                                         self.fillna_window_size, self.smoothing, self.smooth_window_size, self.timespan).aggregate()
             
         elif self.time_step == 'dekad':
-            return DekadalAggregator(self.df, self.variable ,self.fillna,
+            return DekadalAggregator(self.df, self.var ,self.fillna,
                                         self.fillna_window_size, self.smoothing, self.smooth_window_size, self.timespan).aggregate()
             
         elif self.time_step == 'bimonth':
-            return BimonthlyAggregator(self.df, self.variable ,self.fillna,
+            return BimonthlyAggregator(self.df, self.var ,self.fillna,
                                         self.fillna_window_size, self.smoothing, self.smooth_window_size, self.timespan).aggregate()
             
         elif self.time_step == 'day':
-            return DailyAggregator(self.df, self.variable ,self.fillna,
+            return DailyAggregator(self.df, self.var ,self.fillna,
                                         self.fillna_window_size, self.smoothing, self.smooth_window_size, self.timespan).aggregate()
          
 
@@ -413,10 +410,9 @@ class Climatology(Aggregator):
         pd.DataFrame
             The DataFrame containing climatology information.
         """
-        self.climatology_df = self.aggregate()
-        self.climatology_df = compute_clim(self.climatology_df, self.time_step, f"{self.variable}-avg", self.normal_metrics)         
+        self.clim_df = compute_clim(self.aggregate(), self.time_step, f"{self.var}-avg", self.normal_metrics)         
         
-        return filter_df(self.climatology_df, **kwargs)
+        return filter_df(self.clim_df, **kwargs)
     
 
 if __name__ == "__main__":
@@ -430,5 +426,7 @@ if __name__ == "__main__":
     lon = -7.373
         
     sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-    df = Climatology(sm_ts, "sm", time_step="bimonth", normal_metrics=["mean",'median']).compute_normals(month = 1)
+    df = Climatology(sm_ts, "sm", time_step="month", normal_metrics=["mean",'median']).compute_normals(month = 1)
     print(df)
+    df = Climatology(sm_ts, "sm", time_step="month", normal_metrics=["mean",'median'] , timespan=['2015-01-01','2020-01-01']).compute_normals(month = 1)
+    print(df) 
