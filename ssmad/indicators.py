@@ -261,13 +261,14 @@ def para_dis(obs, dist = 'beta'):
     
     obs = np.asarray(obs)
     
-    # if dist == 'beta':
-    a,b,loc,scale = beta.fit(obs)
-    fitted = beta(a,b,loc,scale)
+    if dist == 'beta':
         
-    # elif dist == 'gamma':
-    #     shape,loc,scale = gamma.fit(obs)
-    #     fitted = gamma(shape,loc,scale)
+        a,b,loc,scale = beta.fit(obs)
+        fitted = beta(a,b,loc,scale)
+        
+    elif dist == 'gamma':
+        shape,loc,scale = gamma.fit(obs)
+        fitted = gamma(shape,loc,scale)
         
     cdf = fitted.cdf(obs)
     
