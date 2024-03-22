@@ -278,7 +278,10 @@ def compute_clim(df: pd.DataFrame, time_step: str , variable: str , metrics: Lis
     """
 
     for metric in metrics:
-        df['norm-' + metric] = df.groupby(clim_groupping(df, time_step))[variable].transform(metric)
+        if metric == 'iqr':
+            df['norm-' + metric] = df.groupby(clim_groupping(df, time_step))[variable].transform(lambda x: x.quantile(0.75) - x.quantile(0.25))
+        else:
+            df['norm-' + metric] = df.groupby(clim_groupping(df, time_step))[variable].transform(metric)
         
     return df
 
