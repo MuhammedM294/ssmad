@@ -9,6 +9,7 @@ A module for soil moisture anomalies calculation methods based on climatology. T
 6. SMDS: The Soil Moisture Drought Severity method.
 7. SMCI: The Soil Moisture Condition Index method.
 8. SMCA: The Soil Moisture Content Anomaly method.
+9. ParaDis: The Parametric Distribution method.
 
 
 """
@@ -79,28 +80,20 @@ class AnomalyDetector(Climatology):
         """
         super().__init__(df, variable, fillna,fillna_window_size,smoothing, smooth_window_size, timespan, time_step, normal_metrics)
         # self.clim_df = pd.DataFrame()
-        self.groupby_param = None  
-                
+        # self.groupby_param = None
+        
+    @property
+    def groupby_param(self):
+        
+        return clim_groupping(self.clim_df, self.time_step)
+    
+    
     def _preprocess(self, **kwargs) -> pd.DataFrame:
         """
-        Preprocess the data before computing the anomalies.
-        
-        parameters:
-        -----------
-        kwargs: str
-            Date/time parameters to be used for filtering the data before computing the anomalies. It can be any of the following:
-            ['year', 'month', 'week', 'dekad' , start_date, end_date]
-            
-        returns:
-        --------
-        
-        pd.DataFrame
-            A dataframe containing the preprocessed data for computing the anomalies.
-        
+        Preprocess the data before computing the anomalies.    
         """
         self._validate_input()
         self.clim_df = self.compute_normals(**kwargs)
-        self.groupby_param= clim_groupping(self.clim_df, self.time_step)
         return self.clim_df
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
@@ -239,7 +232,7 @@ class SMDI(AnomalyDetector):
                                                     [f"{self.var}-avg"].transform(smd)
         self.clim_df['smdi'] = smdi(self.clim_df['sd'])
         
-        return filter_df(self.clim_df)
+        return filter_df(self.clim_df , **kwargs)
     
 class SMCA(AnomalyDetector):
     """
@@ -435,7 +428,7 @@ class ESSMI(AnomalyDetector):
     
 class ParaDis(AnomalyDetector):
     """
-    A class for detecting anomalies in time series data based on fitting the observed data to a parametric distribution.
+    A class for detecting anomalies in time series data based on fitting the observed data to a parametric distribution(e.g. beta, gamma, etc.).
     
     """
     
@@ -443,12 +436,12 @@ class ParaDis(AnomalyDetector):
                  fillna:bool = False,fillna_window_size:int = None,
                  smoothing = False, smooth_window_size = None,
                  timespan: List[str] = None , 
-                 time_step: str = "month", dis:List[str] = ['beta']):
+                 time_step: str = "month", dist:List[str] = ['beta']):
+    
         super().__init__(df, variable, fillna,fillna_window_size,
                          smoothing, smooth_window_size, timespan,
                          time_step )
-        
-        self.dis = dis
+        self.dist = dist
         
     def _preprocess(self, **kwargs) -> pd.DataFrame:
         super()._preprocess(**kwargs)    
@@ -456,8 +449,8 @@ class ParaDis(AnomalyDetector):
     
     def detect_anomaly(self, **kwargs) -> pd.DataFrame:
         super().detect_anomaly(**kwargs)
-        for dis in self.dis:
-            self.clim_df[f'{dis}-dis'] = self.clim_df.groupby(self.groupby_param)[f'{self.var}-avg'].transform(para_dis, dist = dis)
+        for dist in self.dist:
+            self.clim_df[f'{dist}'] = self.clim_df.groupby(self.groupby_param)[f'{self.var}-avg'].transform(para_dis, dist = dist)
         
         return filter_df(self.clim_df , **kwargs)
     
@@ -469,10 +462,8 @@ if __name__ == "__main__":
     ascat_path = Path("/home/m294/VSA/Code/datasets")
     
         
-    po = 4854801
-
-        
-    sm_ts = extract_obs_ts(po, ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-    df = ZScore(sm_ts, "sm", time_step="month" ).detect_anomaly(year=2011 , month=11)
+    po = 4854801        
+    sm_ts = extract_obs_ts(po, ascat_path, obs_type="sm" , read_bulk=False)
+    df = ZScore(sm_ts, "sm", time_step="month" , timespan=['2007-01-01','2008-12-31']).detect_anomaly()
     
     print(df)

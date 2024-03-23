@@ -337,7 +337,8 @@ class Climatology(Aggregator):
         super().__init__(df, variable, fillna,fillna_window_size, smoothing, smooth_window_size, timespan)
         self.clim_df = pd.DataFrame()
         
-          
+    
+      
     def _validate_time_step(self,) -> None:
         """
         Validates the time step.
@@ -425,8 +426,7 @@ if __name__ == "__main__":
     lat = 33.201
     lon = -7.373
         
-    sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)["ts"]
-    df = Climatology(sm_ts, "sm", time_step="month", normal_metrics=["mean",'median']).compute_normals(month = 1)
-    print(df)
-    df = Climatology(sm_ts, "sm", time_step="month", normal_metrics=["mean",'median'] , timespan=['2015-01-01','2020-01-01']).compute_normals(month = 1)
-    print(df) 
+    sm_ts = extract_obs_ts((lon, lat), ascat_path, obs_type="sm" , read_bulk=False)
+    cl = Climatology(sm_ts, "sm", time_step="month", normal_metrics=["mean",'median'] , timespan=['2007-01-01', '2009-12-31'])
+    print(cl.compute_normals())
+   
