@@ -1,8 +1,13 @@
 import logging
 from functools import wraps
 from time import time
+import requests
+from io import StringIO
+import pycountry
 import pandas as pd
 import numpy as np
+
+
 
 
 def create_logger(name, level=logging.DEBUG):
@@ -73,11 +78,13 @@ def log_time(logger):
     
     parameters:
     ----------
+    
     logger: logging.logger
         a logger object
         
     returns:
     -------
+    
     decorator: function
         a decorator function
     
@@ -94,5 +101,75 @@ def log_time(logger):
     return decorator
 
 
+def get_country_code(country_name):
+    """
+    Get the ISO 3166-1 alpha-3 country code for a given country name.
+    
+    parameters:
+    ----------
+    
+    country_name: str
+        name of the country
+        
+    returns:
+    -------
+    
+    country_code: str
+        ISO 3166-1 alpha-3 country code
+    """
+    try:
+        # Get ISO alpha-3 code for the provided country name
+        country = pycountry.countries.lookup(country_name)
+        return country.alpha_3
+    except LookupError:
+        print("Country name not found.")
+        return None
 
+def load_gpis_by_country(country , grid = "fibgrid_n6600000" , format = "csv"):
+    
+    """
+    Load the GPIS based on the country name from the DGG API 
+    Source: https://dgg.geo.tuwien.ac.at/
+    
+    parameters:
+    ----------
+    country: str
+        name of the country
+        
+    grid: str
+        name of the grid to be used. Default is "fibgrid_n6600000". Supported grids are:
+        - fibgrid_n6600000 (Fibonacci 6.5 km)
+        - fibgrid_n1650000 (Fibonacci 12.5 km)
+        - fibgrid_n430000  (Fibonacci 25 km)
+        - warp (WARP)
+        
+    format: str
+        format of the data to be returned. Default is "csv". Supported formats are:
+        - csv
+        - json
+    """
+    
+    country = get_country_code(country)
+    
+    # Construct the URL based on the provided country name, grid, and format
+    url = f"https://dgg.geo.tuwien.ac.at/get_points/?grid={grid}&country={country.upper()}&format=csv"
+    
+    try:
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            csv_data = response.content.decode('utf-8')
+            df = pd.read_csv(StringIO(csv_data))
+            return df
+        else:
+            print(f"Failed to download CSV file. Status code: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return None
+
+
+    
+if __name__ == "__main__":
+    print(pycountry.countries.lookup("hahah"))
     
