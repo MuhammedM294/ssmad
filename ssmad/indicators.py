@@ -261,8 +261,7 @@ def para_dis(obs, dist = 'beta'):
     
     obs = np.asarray(obs)
     
-    if dist == 'beta':
-        
+    if dist  == 'beta':
         a,b,loc,scale = beta.fit(obs)
         fitted = beta(a,b,loc,scale)
         
@@ -284,5 +283,7 @@ if __name__ == '__main__':
     median = np.median(sm)
     mini = np.min(sm)
     maxi = np.max(sm)
+    
+    print(para_dis(sm, 'beta'))
     
     

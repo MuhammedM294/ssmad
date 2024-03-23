@@ -51,7 +51,7 @@ def read_grid_point(loc,
     """
     data = {}
 
-    print(f"Reading ASCAT soil moisture: {ascat_sm_path}")
+    # print(f"Reading ASCAT soil moisture: {ascat_sm_path}")
     ascat_obj = AscatData(ascat_sm_path, read_bulk)
 
     if isinstance(loc, tuple):
@@ -61,7 +61,7 @@ def read_grid_point(loc,
     else:
         ascat_gpi = loc
         lon, lat = ascat_obj.grid.gpi2lonlat(ascat_gpi)
-        print(f"ASCAT GPI: {ascat_gpi}")
+        # print(f"ASCAT GPI: {ascat_gpi}")
 
     ascat_ts = ascat_obj.read(ascat_gpi)
 
@@ -100,13 +100,15 @@ def extract_obs_ts(loc, ascat_path, obs_type="sm", read_bulk=False):
     """
     data = read_grid_point(loc, ascat_path, read_bulk)
     ascat_ts = data.get("ascat_ts")
-    lat = data.get("ascat_lat")
-    lon = data.get("ascat_lon")
-    gpi = data.get("ascat_gpi")
+    # lat = data.get("ascat_lat")
+    # lon = data.get("ascat_lon")
+    # gpi = data.get("ascat_gpi")
     ts= ascat_ts.get(obs_type)
     ts.dropna(inplace=True)
     
-    return {"ts": pd.DataFrame(ts), "lon": lon, "lat": lat, "gpi": gpi}
+    # return {"ts": pd.DataFrame(ts), "lon": lon, "lat": lat, "gpi": gpi}
+    
+    return pd.DataFrame(ts)
 
 
 
