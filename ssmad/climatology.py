@@ -5,9 +5,20 @@ A module for calculating climatology (climate normal) for different time steps (
 __author__ = "Muhammed Abdelaal"
 __email__ = "muhammedaabdelaal@gmail.com"
 
-from typing import List, Union
+from typing import List
 import pandas as pd
-from ssmad.preprocess import *
+from ssmad.preprocess import (
+    fillna, 
+    smooth, 
+    filter_df, 
+    monthly_agg, 
+    dekadal_agg, 
+    weekly_agg, 
+    bimonthly_agg, 
+    compute_clim
+)
+
+
 
 
 
@@ -167,7 +178,7 @@ class Aggregator:
         """
         Validates the input parameters.
         """
-        self._validate_df_index()
+        # self._validate_df_index()
         self._validate_variable()
         self._validate_fillna_smoothing()
     

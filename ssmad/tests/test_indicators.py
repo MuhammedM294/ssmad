@@ -1,7 +1,16 @@
 import pytest
 import pandas as pd
 import numpy as np
-from ssmad.indicators import *
+from ssmad.indicators import (
+    zscore,
+    smapi,
+    smdi,
+    smad,
+    smca,
+    smci,
+    smds,
+    essmi,
+    smd)
 
 
 

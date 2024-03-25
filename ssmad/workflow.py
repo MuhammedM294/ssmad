@@ -8,32 +8,21 @@ __email__ = "muhammedaabdelaal@gmail.com"
 from typing import List, Tuple, Union, Dict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-import pandas as pd
 from pathlib import Path
-from ssmad.data_reader import *
-from ssmad.anomaly_detectors import *
-from ssmad.utils import create_logger, log_exception, log_time , load_gpis_by_country
+import pandas as pd
+import numpy as np
+from ssmad.data_reader import AscatData
+from ssmad.metadata import _Detectors
+from ssmad.utils import (
+    create_logger,
+    log_exception,
+    log_time ,
+    load_gpis_by_country)
 
 
-# Supported anomaly detection methods
-_Detectors = {
-    'zscore': ZScore,
-    'smapi-mean': SMAPI,
-    'smapi-median': SMAPI,
-    'smdi': SMDI,
-    'smca-mean': SMCA,
-    'smca-median': SMCA,
-    'smad': SMAD,
-    'smci': SMCI, 
-    'smds': SMDS,
-    'essmi': ESSMI,
-    'beta':ParaDis, 
-    'gamma':ParaDis,
-    }
+
 
 logger = create_logger('run_logger')
-
-    
 
 def load_gpis(file):
     """
@@ -161,7 +150,7 @@ def validate_date_params(time_step: str,
 
     return date_param
 
-
+@log_exception(logger)
 def anomaly_worlflow(gpi:int ,
             methods:str= ['zscore'],
             variable:str = 'sm',
@@ -293,22 +282,31 @@ def anomaly_worlflow(gpi:int ,
                 
             elif method in ['beta','gamma']:
                 anomaly_params['dist'] = [method]
+            
+            try:
+                for date_param in date_params:
+                    anomaly = _Detectors[method](**anomaly_params).detect_anomaly(**date_param)
+                    date_str = f"-".join(str(value) for value in date_param.values())
+                    results[method+ f"({date_str})"] = anomaly[method].values[0]
+                    
+            except AttributeError as e:
+                return None
                 
-            for date_param in date_params:
-                anomaly = _Detectors[method](**anomaly_params).detect_anomaly(**date_param)
-                date_str = f"-".join(str(value) for value in date_param.values())
-                results[method+ f"({date_str})"] = anomaly[method].values[0]
+              
         
     return (gpi , results)
 
 
-
-
+@log_exception(logger)
 def _finalize(result:Tuple[int, dict] , df:pd.DataFrame , gpis_col = 'point'):
-
-    gpi, anomaly = result
-    for method, value in anomaly.items():
-        df.loc[df[gpis_col] == gpi, method] = value
+    try:
+        gpi, anomaly = result
+    except Exception as e:
+        return df
+    
+    else:
+        for method, value in anomaly.items():
+            df.loc[df[gpis_col] == gpi, method] = value
         
     return df
 
@@ -339,7 +337,7 @@ def run(
     
     
     pointlist = load_gpis_by_country(country)
-    pointlist = pointlist[:10]
+    # pointlist = pointlist[1000:1500]
     pre_compute  = partial(anomaly_worlflow,
                            methods=methods,
                            variable=variable,
@@ -373,12 +371,17 @@ if __name__ == "__main__":
     # # Example usage
     ascat_path = Path("/home/m294/VSA/Code/datasets")
     ascat_obj = AscatData(ascat_path, False)
-    df = run('germany', methods=['zscore'], variable='sm', time_step='month', year=2012, month=12 ,
+    df = run('Germany', methods=['zscore','smad', 'smapi-mean',
+                                 'smapi-median','' 'essmi',
+                                 'beta','gamma', 'smds','smca-mean','smca-median',
+                                 'smci', 'smdi'], variable='sm', time_step='month', year=[2021,2021], month=[6,7] ,
              fillna=True, fillna_window_size=3, smoothing=True, smooth_window_size=31,
              )
     
     print(df)
+    df.to_csv('results.csv')
     
+   
     
     
     
