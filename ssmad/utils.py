@@ -1,7 +1,7 @@
 import logging
+import requests
 from functools import wraps
 from time import time
-import requests
 from io import StringIO
 import pycountry
 import pandas as pd
